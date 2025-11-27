@@ -15,6 +15,7 @@
             --button-color: var(--tg-theme-button-color, #007bff);
             --button-text-color: var(--tg-theme-button-text-color, #ffffff);
             --secondary-bg-color: var(--tg-theme-secondary-bg-color, #ffffff);
+            --accent-color: #fdd835; /* Золотой/желтый для звезд */
         }
 
         body {
@@ -26,6 +27,29 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+        }
+
+        /* --- ГЛОБАЛЬНЫЙ БАЛАНС И ЗАГОЛОВОК --- */
+        #global-header-bar {
+            position: sticky;
+            top: 0;
+            padding: 10px 15px;
+            background-color: var(--secondary-bg-color);
+            border-bottom: 1px solid var(--bg-color);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        .balance-info strong {
+            color: var(--accent-color);
+        }
+        .balance-info small {
+            color: var(--hint-color);
+            margin-left: 10px;
         }
 
         .container {
@@ -42,6 +66,109 @@
             margin-bottom: 15px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
+
+        /* --- СТИЛЬ КОМПАКТНЫХ ЗАДАНИЙ --- */
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background-color: var(--secondary-bg-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: 1px solid var(--bg-color);
+        }
+        .task-item:active {
+            background-color: rgba(var(--tg-theme-link-color-rgb, 0, 123, 255), 0.1);
+        }
+        .task-title {
+            font-weight: 500;
+            flex-grow: 1;
+            color: var(--text-color);
+        }
+        .task-price {
+            font-weight: 700;
+            color: var(--link-color);
+            background-color: var(--bg-color);
+            padding: 5px 10px;
+            border-radius: 6px;
+            min-width: 60px;
+            text-align: center;
+            margin-left: 10px;
+        }
+
+        /* --- КОМПАКТНЫЙ ПРОФИЛЬ (АНКЕТА) --- */
+        #profile-form-header {
+            margin-top: 10px;
+            padding: 15px;
+            background-color: var(--secondary-bg-color);
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        #profile-form-header select {
+            background-color: var(--bg-color);
+            border: 1px solid var(--hint-color);
+            border-radius: 6px;
+            padding: 8px;
+            color: var(--text-color);
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* --- Tab Bar --- */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--secondary-bg-color);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 5px 0;
+            z-index: 1000;
+        }
+
+        .tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            cursor: pointer;
+            color: var(--hint-color);
+            font-size: 12px;
+            position: relative;
+        }
+
+        .tab-item i {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .tab-item.active {
+            color: var(--link-color);
+        }
+        
+        .tab-rating {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        /* --- Имитация Иконок --- */
+        .icon-tasks::before { content: '💰'; } /* Новая монетка */
+        .icon-customer::before { content: '📣'; }
+        .icon-profile::before { content: '👤'; }
+        
+        /* --- Общие стили для форм и кнопок --- */
+        /* ... (Остальные стили форм и кнопок остаются из предыдущей версии) ... */
 
         input[type="text"], input[type="number"], select, textarea {
             width: 100%;
@@ -80,60 +207,6 @@
             cursor: pointer;
         }
         
-        /* --- Прогресс-бар --- */
-        .progress-bar {
-            background-color: var(--bg-color);
-            border-radius: 10px;
-            height: 20px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-
-        .progress {
-            height: 100%;
-            background-color: var(--link-color);
-            text-align: right;
-            line-height: 20px;
-            color: var(--button-text-color);
-            font-size: 12px;
-            font-weight: 500;
-            padding-right: 5px;
-            box-sizing: border-box;
-        }
-        
-        /* --- Tab Bar --- */
-        .tab-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            background-color: var(--secondary-bg-color);
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-            padding: 5px 0;
-            z-index: 1000;
-        }
-
-        .tab-item {
-            flex: 1;
-            text-align: center;
-            padding: 10px 0;
-            cursor: pointer;
-            color: var(--hint-color);
-            font-size: 12px;
-        }
-
-        .tab-item i {
-            font-size: 20px;
-            display: block;
-            margin-bottom: 2px;
-        }
-
-        .tab-item.active {
-            color: var(--link-color);
-        }
-        
         /* --- Модальное окно --- */
         .modal {
             display: none; 
@@ -143,7 +216,7 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.4); 
+            background-color: rgba(0,0,0,0.6); 
             justify-content: center;
             align-items: center;
         }
@@ -154,19 +227,20 @@
             border-radius: 12px;
             width: 90%;
             max-width: 400px;
-            text-align: center;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            overflow-y: auto;
         }
-
-        /* Имитация иконок */
-        .icon-tasks::before { content: '🎯'; }
-        .icon-customer::before { content: '📣'; }
-        .icon-profile::before { content: '👤'; }
-        
     </style>
 </head>
 <body>
+    <div id="global-header-bar">
+        </div>
+
     <div class="container">
+        <div id="profile-form-header" style="display: none;">
+            </div>
+
         <div id="worker-tasks-container" style="display: block;">
             </div>
 
@@ -192,21 +266,26 @@
         <div class="tab-item" data-target="profile">
             <i class="icon-profile"></i>
             <span>Профиль</span>
-        </div>
-    </div>
-
-    <div id="profile-modal" class="modal">
-        <div class="modal-content">
-            <h3>⚠️ Заполните Профиль</h3>
-            <p>Чтобы начать выполнять задания и зарабатывать, пожалуйста, заполните свою анкету исполнителя.</p>
-            <button id="modal-goto-profile" class="btn-primary">Перейти в Профиль</button>
-            <button id="modal-close" class="btn-primary" style="background-color: var(--hint-color);">Закрыть</button>
+            <span class="tab-rating"></span>
         </div>
     </div>
 
     <div id="profile-form-modal" class="modal">
         <div id="profile-form-modal-content" class="modal-content">
-            <h3>Загрузка формы...</h3>
+            </div>
+    </div>
+    
+    <div id="agreement-modal" class="modal">
+        <div class="modal-content">
+            <h3>Пользовательское Соглашение Заказчика</h3>
+            <div style="text-align: left; max-height: 200px; overflow-y: auto; border: 1px solid var(--bg-color); padding: 10px; margin-bottom: 15px;">
+                <p>1. **Модерация:** Все задания проходят модерацию. Запрещены мат, агрессия, NSFW и незаконный контент.</p>
+                <p>2. **Администратор Бота:** Для проверки выполнения задания, вы обязуетесь добавить бота @ProfitProHub_bot администратором в рекламируемый канал/чат. Если бот не является администратором, задание не будет запущено, а средства вернутся на баланс.</p>
+                <p>3. **Списание средств:** Средства списываются сразу после успешной модерации и установки бота-администратора.</p>
+                <p>4. **Ответственность:** Вы несете полную ответственность за контент, который продвигаете.</p>
+            </div>
+            <button id="modal-accept-agreement" class="btn-primary">Принять и Продолжить</button>
+            <button id="modal-cancel-agreement" class="btn-primary" style="background-color: var(--hint-color); margin-top: 10px;">Отмена</button>
         </div>
     </div>
 

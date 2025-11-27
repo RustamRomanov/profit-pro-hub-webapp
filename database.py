@@ -9,19 +9,25 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # Таблица Users (добавлены поля profile_age, profile_gender, profile_country)
+    # Таблица Users (ДОБАВЛЕНЫ: profile_emoji и rating)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
             is_customer BOOLEAN DEFAULT FALSE,
             balance_simulated REAL DEFAULT 0.0,
+            
+            -- НОВЫЕ ПОЛЯ ПРОФИЛЯ ДЛЯ АВАТАРА И СИСТЕМЫ ОЦЕНОК
+            profile_emoji TEXT DEFAULT '',
+            rating REAL DEFAULT 5.0, 
+            
+            -- Существующие поля анкеты
             profile_age INTEGER DEFAULT 0,
             profile_gender TEXT DEFAULT '',
             profile_country TEXT DEFAULT ''
         );
     """)
 
-    # Таблица tasks
+    # Таблица tasks (Остается без изменений)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +64,17 @@ def db_query(query, params=(), fetchone=False):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    cursor.execute(query, params)
+    # 💡 Потенциальная проблема: Если БД не существует, она создастся здесь, 
+    # но init_db() не будет вызвана. Ваш main.py вызывает init_db() при старте, 
+    # что должно гарантировать наличие таблиц.
+    try:
+        cursor.execute(query, params)
+    except sqlite3.OperationalError as e:
+        print(f"SQLite Error: {e}")
+        # Это может быть вызвано тем, что таблица users не была пересоздана. 
+        # Удаление profit_pro_hub_mvp.db перед запуском main.py решит эту проблему.
+        conn.close()
+        raise e
     
     if query.strip().upper().startswith(("SELECT")):
         result = cursor.fetchone() if fetchone else cursor.fetchall()
