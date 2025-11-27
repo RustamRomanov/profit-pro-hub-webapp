@@ -1,4 +1,5 @@
-# main.py
+# main.py (ПОЛНЫЙ КОД)
+
 import json
 from telegram import Update, WebAppInfo, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -9,8 +10,13 @@ from telegram.ext import (
     MessageHandler, 
     filters
 )
-from database import init_db, setup_initial_data, db_query
+# Добавляем импорт random
+import random 
+from database import init_db, setup_initial_data, db_query # Предполагается, что database.py существует
 from config import BOT_TOKEN, MINI_APP_URL, PROJECT_NAME
+
+# Список эмодзи для аватаров (безликие, цветные)
+EMOJI_AVATARS = ['🟥', '🟦', '🟧', '🟪', '🟩', '🟨', '🟫', '⚫', '⚪', '🟢', '🟡', '🟣'] 
 
 # Инициализируем БД и тестовые данные при старте
 init_db()
@@ -20,11 +26,19 @@ setup_initial_data()
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
-    # 1. Проверяем пользователя (просто регистрируем, если нет)
-    user_data = db_query("SELECT user_id, balance_simulated FROM users WHERE user_id = ?", (user_id,), fetchone=True)
+    # 1. Проверяем пользователя и присваиваем новые поля, если он новый
+    # Обновляем запрос: теперь нам нужны все поля для Mini App
+    user_data = db_query("SELECT user_id, balance_simulated, profile_emoji, rating FROM users WHERE user_id = ?", (user_id,), fetchone=True)
     
     if not user_data:
-        db_query("INSERT INTO users (user_id) VALUES (?)", (user_id,))
+        # Если пользователь новый, присваиваем рандомный эмодзи и начальный рейтинг
+        random_emoji = random.choice(EMOJI_AVATARS)
+        initial_rating = 5.0 # Начинаем с 5.0
+        
+        # Предполагаем, что INSERT ожидает profile_emoji и rating
+        db_query("INSERT INTO users (user_id, profile_emoji, rating) VALUES (?, ?, ?)", 
+                 (user_id, random_emoji, initial_rating))
+        
         balance = 0.0
     else:
         balance = user_data[1]
@@ -53,7 +67,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer("Сначала откройте Mini App.")
 
 
-# --- 3. Обработчик данных из Mini App (Логика "Создать задание" и 100 Звезд) ---
+# --- 3. Обработчик данных из Mini App (Логика "Создать задание" и Профиль) ---
 async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     data_json = update.effective_message.web_app_data.data 
@@ -72,6 +86,7 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         gender = data.get('gender')
         country = data.get('country')
         
+        # Предполагается, что поля profile_age, profile_gender, profile_country существуют в таблице users
         db_query("UPDATE users SET profile_age = ?, profile_gender = ?, profile_country = ? WHERE user_id = ?", 
                  (age, gender, country, user_id))
                  
@@ -81,15 +96,13 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             parse_mode='Markdown'
         )
         
-    # B. Установка режима Заказчика и выдача бонуса
+    # B. Установка режима Заказчика (старый, возможно, неактуальный код)
     elif action == 'set_customer_mode':
-        # ... (логика set_customer_mode остается прежней)
-        
-        # Добавляем оповещение, что клиент может пополнить счет
+        # Этот блок кода должен быть обновлен, если логика set_customer_mode отличается
+        # от новой логики 'save_profile' и 'create_task'
+        # В данный момент оставлю его как заглушку, так как Mini App его не вызывает
         await update.effective_message.reply_text(
             f"💰 **Режим Заказчика (Продвижение) установлен!**\n\n"
-            f"{balance_msg}\n"
-            f"Ваш текущий баланс: **{new_balance} Звезд**.\n\n"
             f"Для пополнения или вывода средств нажмите на баланс в Mini App.",
             parse_mode='Markdown'
         )
@@ -105,13 +118,20 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         count = data.get('count')
         total = data.get('total')
         
-        current_balance = db_query("SELECT balance_simulated FROM users WHERE user_id = ?", (user_id,), fetchone=True)[0]
+        # Получаем текущий баланс из БД
+        current_balance = db_query("SELECT balance_simulated FROM users WHERE user_id = ?", (user_id,), fetchone=True)
+        if current_balance:
+             current_balance = current_balance[0]
+        else:
+             # Этого не должно случиться, так как пользователь регистрируется в start_command
+             current_balance = 0.0
         
         if current_balance >= total:
             new_balance = current_balance - total
             db_query("UPDATE users SET balance_simulated = ? WHERE user_id = ?", (new_balance, user_id))
             
             # Добавление задания (имитация, модерация)
+            # Предполагается, что таблица tasks существует
             db_query("INSERT INTO tasks (customer_id, title, price_simulated, slots_remaining) VALUES (?, ?, ?, ?)", 
                        (user_id, title, price, count))
                        
@@ -119,27 +139,28 @@ async def web_app_data_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 f"✅ **Задание отправлено на модерацию!**\n\n"
                 f"Название: **{title}** (Тип: {task_type})\n"
                 f"Ссылка: {link}\n"
-                f"Списано: **{total} Звезд**\n"
+                f"Списано: **{total:.2f} Звезд**\n"
                 f"Новый баланс: **{new_balance:.2f} Звезд**.",
                 parse_mode='Markdown'
             )
-            # Внимание: Mini App теперь не закрывается, а переходит в меню заказчика!
         else:
             await update.effective_message.reply_text(
                 f"🛑 **Ошибка: Недостаточно средств!**\n"
-                f"Требуется: {total} Звезд | На счете: {current_balance} Звезд.",
+                f"Требуется: {total:.2f} Звезд | На счете: {current_balance:.2f} Звезд.",
                 parse_mode='Markdown'
             )
 
 
 # --- 4. Запуск Бота ---
 def main():
+    # Используем Application.builder().token()
     application = Application.builder().token(BOT_TOKEN).build()
     
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("menu", start_command))
     application.add_handler(CallbackQueryHandler(button_callback))
     
+    # Обработчик данных из Mini App
     application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, web_app_data_handler))
 
     print(f"Бот {PROJECT_NAME} запущен и ожидает команд...")

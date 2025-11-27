@@ -7,7 +7,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* Стили на основе цветовой схемы Telegram */
         :root {
             --bg-color: var(--tg-theme-bg-color, #f4f4f4);
             --text-color: var(--tg-theme-text-color, #000000);
@@ -32,7 +31,7 @@
         .container {
             padding: 15px;
             flex-grow: 1;
-            padding-bottom: 70px; /* Место для Tab Bar */
+            padding-bottom: 70px;
         }
 
         /* --- Карточки и Формы --- */
@@ -81,6 +80,7 @@
             cursor: pointer;
         }
         
+        /* --- Прогресс-бар --- */
         .progress-bar {
             background-color: var(--bg-color);
             border-radius: 10px;
@@ -155,6 +155,7 @@
             width: 90%;
             max-width: 400px;
             text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
 
         /* Имитация иконок */
@@ -197,9 +198,15 @@
     <div id="profile-modal" class="modal">
         <div class="modal-content">
             <h3>⚠️ Заполните Профиль</h3>
-            <p>Чтобы начать выполнять задания и зарабатывать, пожалуйста, заполните свою анкету исполнителя (Возраст, Пол, Страна).</p>
+            <p>Чтобы начать выполнять задания и зарабатывать, пожалуйста, заполните свою анкету исполнителя.</p>
             <button id="modal-goto-profile" class="btn-primary">Перейти в Профиль</button>
             <button id="modal-close" class="btn-primary" style="background-color: var(--hint-color);">Закрыть</button>
+        </div>
+    </div>
+
+    <div id="profile-form-modal" class="modal">
+        <div id="profile-form-modal-content" class="modal-content">
+            <h3>Загрузка формы...</h3>
         </div>
     </div>
 

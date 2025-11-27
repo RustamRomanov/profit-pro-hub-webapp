@@ -1,12 +1,33 @@
-// app.js
+// app.js (ПОЛНЫЙ КОД)
 
 document.addEventListener('DOMContentLoaded', () => {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand(); 
     
-    // Имитация статуса профиля (в реальной версии получаем от бэкенда)
+    // Имитация данных пользователя. В реальной версии эти данные 
+    // ДОЛЖНЫ загружаться с бэкенда при открытии Mini App.
     let isProfileFilled = false;
+    let currentUserData = { 
+        age: 25, // Имитация данных
+        gender: 'M', // Имитация данных
+        country: 'Россия', // Имитация данных
+        balance: 5.25,
+        rating: 4.8, // Имитация рейтинга
+        emoji: '🟥', // Имитация эмодзи
+        isFilled: false // Флаг заполненности
+    }; 
+    
+    // Функция для имитации/загрузки данных
+    function loadUserData() {
+        // Здесь должен быть AJAX-запрос к боту для получения ВСЕХ данных (баланс, возраст, пол, страна, эмодзи, рейтинг)
+        
+        // Имитация проверки заполненности
+        currentUserData.isFilled = !!(currentUserData.age && currentUserData.gender && currentUserData.country);
+        isProfileFilled = currentUserData.isFilled;
+    }
+    
+    loadUserData(); // Загружаем данные при старте
 
     const containers = {
         workerTasks: document.getElementById('worker-tasks-container'),
@@ -18,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabBar = document.querySelector('.tab-bar');
     const tabItems = document.querySelectorAll('.tab-item');
     const profileModal = document.getElementById('profile-modal');
+    const profileFormModal = document.getElementById('profile-form-modal'); // Новое модальное окно для анкеты
     
     // --- Данные для Списков ---
     const COUNTRIES = [
@@ -28,15 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 0. Управление отображением контейнеров ---
     function showContainer(containerName) {
-        // Скрываем все контейнеры
         Object.values(containers).forEach(container => container.style.display = 'none');
-        // Показываем нужный
         if (containers[containerName]) {
             containers[containerName].style.display = 'block';
         }
         tg.MainButton.hide(); 
         
-        // Переключаем активный таб
         tabItems.forEach(item => {
             if (item.getAttribute('data-target') === containerName) {
                 item.classList.add('active');
@@ -62,11 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. Рендер Меню Исполнителя: ЗАДАНИЯ (ПО УМОЛЧАНИЮ) ---
     function renderWorkerTasks() {
-        // Имитация баланса и заданий
-        const currentBalance = 5.25; 
+        const currentBalance = currentUserData.balance; 
         const tasks = [
             { id: 1, title: "Подписка: VIP-канал", price: 0.50, slots: 100, type: 'subscribe' },
             { id: 2, title: "Комментарий: Оставить отзыв", price: 0.35, slots: 85, type: 'comment' },
+            // ... (Остальные задания)
             { id: 3, title: "Подписка: Новый канал (Срочно!)", price: 0.15, slots: 500, type: 'subscribe' },
             { id: 4, title: "Реакция: 5 лайков", price: 0.10, slots: 1000, type: 'reaction' },
             { id: 5, title: "Комментарий: Вопрос по теме", price: 0.40, slots: 50, type: 'comment' },
@@ -98,12 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
             ${tasksHtml}
         `;
         
-        // Добавление обработчиков клика на кнопки "Выполнить"
         document.querySelectorAll('.btn-do-task').forEach(button => {
             button.onclick = (e) => {
                 e.stopPropagation();
                 if (!isProfileFilled) {
-                    showModal('profile-modal');
+                    // 💡 Если профиль не заполнен, показываем модальное окно с формой
+                    showModal('profile-form-modal', true); 
                 } else {
                     tg.showAlert(`Имитация выполнения задания ${e.target.dataset.taskId}.`);
                 }
@@ -113,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- 2. Рендер Меню Заказчика: СОЗДАТЬ ---
     function renderCustomerMenu() {
-        // Имитация активных заданий
         const currentBalance = 100.00;
         const activeTasks = [
             { id: 101, title: "Подписка на канал (активно)", spent: 15.0, total: 50.0, percent: (15/50)*100 },
@@ -156,10 +174,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- 3. Рендер Формы Создания Задания ---
     function renderCreateTask() {
-         // Сохраняем текущий MainButton, чтобы вернуться к нему после размещения
          tg.MainButton.hide();
          
-         // Здесь используется более компактный стиль ввода
          containers.createTask.innerHTML = `
             <h2>Создать Задание</h2>
             <div class="card">
@@ -199,7 +215,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
-        // Логика динамического отображения деталей
         const taskTypeSelect = document.getElementById('task-type');
         const commentDetailsDiv = document.getElementById('comment-details');
         const taskDetailsSelect = document.getElementById('task-details');
@@ -217,34 +232,28 @@ document.addEventListener('DOMContentLoaded', () => {
         tg.MainButton.show();
         tg.MainButton.onClick(sendTaskData);
         
-        // Переопределяем нажатие на MainButton для возврата в меню заказчика
         tg.onEvent('mainButtonClicked', sendTaskData); 
     }
     
     // --- 4. Рендер Меню ПРОФИЛЬ ---
     function renderProfile() {
-        // Имитация данных (должны быть получены из БД)
-        const profileData = { 
-            age: 25, 
-            gender: 'M', 
-            country: 'Россия',
-            balance: 5.25,
-            filled: isProfileFilled 
-        }; 
+        const profile = currentUserData; 
 
-        // Генерация опций для селектора возраста
-        const ageOptions = generateOptions(16, 99, profileData.age);
-        const countryOptions = generateCountryOptions(COUNTRIES, profileData.country);
+        // Генерация опций для селектора
+        const ageOptions = generateOptions(16, 99, profile.age);
+        const countryOptions = generateCountryOptions(COUNTRIES, profile.country);
         
-        let status = profileData.filled ? 
+        let status = profile.isFilled ? 
             '✅ Профиль заполнен' : 
             '⚠️ Профиль не заполнен. Заполните, чтобы выполнять задания.';
 
         containers.profile.innerHTML = `
             <h2>👤 Профиль</h2>
 
-            <div class="card" style="text-align: center;">
-                <h3>Баланс: <span class="balance-link" onclick="handleBalanceClick('worker')">${profileData.balance.toFixed(2)} Звезд</span></h3>
+            <div class="card" style="text-align: center; position: relative;">
+                <div id="profile-avatar" style="font-size: 50px; cursor: pointer;">${profile.emoji}</div>
+                <h3>Баланс: <span class="balance-link" onclick="handleBalanceClick('worker')">${profile.balance.toFixed(2)} Звезд</span></h3>
+                <p>Рейтинг: ⭐️ <strong>${profile.rating.toFixed(1)}</strong></p>
                 <small>${status}</small>
             </div>
             
@@ -259,8 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label for="gender">Пол:</label>
                         <select id="gender" required>
                             <option value="">Выберите</option>
-                            <option value="M" ${profileData.gender === 'M' ? 'selected' : ''}>Мужской</option>
-                            <option value="F" ${profileData.gender === 'F' ? 'selected' : ''}>Женский</option>
+                            <option value="M" ${profile.gender === 'M' ? 'selected' : ''}>Мужской</option>
+                            <option value="F" ${profile.gender === 'F' ? 'selected' : ''}>Женский</option>
                         </select>
                     </div>
                 </div>
@@ -271,18 +280,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 </select>
             </div>
 
-            <button id="btn-save-profile" class="btn-primary">Сохранить Профиль</button>
-
             <h3>🕒 История Выполненных Заданий</h3>
             <div class="card" style="text-align: center;"><p>Ваша история заработка будет здесь.</p></div>
         `;
-        
-        document.getElementById('btn-save-profile').onclick = saveProfile;
         
         // Устанавливаем MainButton для сохранения
         tg.MainButton.setText("Сохранить Профиль");
         tg.MainButton.show();
         tg.MainButton.onClick(saveProfile);
+        
+        // Логика: Клик по аватару открывает модальное окно анкеты для редактирования
+        document.getElementById('profile-avatar').onclick = () => showModal('profile-form-modal', true); 
     }
     
     // --- Вспомогательные функции ---
@@ -305,42 +313,116 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Обработчики Действий ---
     
-    function showModal(id) {
+    function showModal(id, loadProfileData = false) {
         document.getElementById(id).style.display = 'flex';
+        // Если открываем модалку с формой из аватара или при попытке выполнить, загружаем текущие данные
+        if (id === 'profile-form-modal' && loadProfileData) {
+            renderProfileFormModal(currentUserData);
+        }
     }
 
     function hideModal(id) {
         document.getElementById(id).style.display = 'none';
     }
     
-    // Обработчик сохранения профиля
+    // Рендеринг формы профиля в модальном окне
+    function renderProfileFormModal(profile) {
+        const ageOptions = generateOptions(16, 99, profile.age);
+        const countryOptions = generateCountryOptions(COUNTRIES, profile.country);
+        
+        document.getElementById('profile-form-modal-content').innerHTML = `
+            <h3>📝 Анкета Исполнителя</h3>
+            <p>${profile.isFilled ? 'Обновите данные.' : 'Заполните, чтобы получить доступ к заданиям.'}</p>
+            <div class="select-group">
+                <div>
+                    <label for="modal-age">Возраст (16-99):</label>
+                    <select id="modal-age" required>${ageOptions}</select>
+                </div>
+                <div>
+                    <label for="modal-gender">Пол:</label>
+                    <select id="modal-gender" required>
+                        <option value="">Выберите</option>
+                        <option value="M" ${profile.gender === 'M' ? 'selected' : ''}>Мужской</option>
+                        <option value="F" ${profile.gender === 'F' ? 'selected' : ''}>Женский</option>
+                    </select>
+                </div>
+            </div>
+            
+            <label for="modal-country">Страна:</label>
+            <select id="modal-country" required>
+                ${countryOptions}
+            </select>
+            
+            <button id="modal-save-profile" class="btn-primary" style="margin-top: 15px;">Сохранить и Продолжить</button>
+            <button id="modal-close-form" class="btn-primary" style="background-color: var(--hint-color); margin-top: 10px;">Отмена</button>
+        `;
+        
+        // Обработчики внутри модального окна
+        document.getElementById('modal-save-profile').onclick = saveProfileFromModal;
+        document.getElementById('modal-close-form').onclick = () => hideModal('profile-form-modal');
+    }
+    
+    // Сохранение профиля из модального окна
+    function saveProfileFromModal() {
+        const age = document.getElementById('modal-age').value;
+        const gender = document.getElementById('modal-gender').value;
+        const country = document.getElementById('modal-country').value;
+        
+        // Обновляем текущие данные
+        currentUserData.age = age;
+        currentUserData.gender = gender;
+        currentUserData.country = country;
+
+        saveProfileLogic(age, gender, country);
+        hideModal('profile-form-modal');
+    }
+
+    // Сохранение профиля из вкладки Профиль
     function saveProfile() {
         const age = document.getElementById('age').value;
         const gender = document.getElementById('gender').value;
         const country = document.getElementById('country').value;
+        
+        // Обновляем текущие данные
+        currentUserData.age = age;
+        currentUserData.gender = gender;
+        currentUserData.country = country;
 
+        saveProfileLogic(age, gender, country);
+    }
+    
+    // ЛОГИКА сохранения (общая для вкладки и модалки)
+    function saveProfileLogic(age, gender, country) {
         if (!age || !gender || !country) {
             tg.showAlert("Пожалуйста, заполните все поля профиля.");
             return;
         }
         
-        // Отправка данных профиля боту для сохранения
+        // Отправка данных боту
         tg.sendData(JSON.stringify({
             action: 'save_profile',
             age: age,
-            // 💡 ИСПРАВЛЕНО: удалено лишнее 'gender:'
             gender: gender, 
             country: country
         }));
         
-        isProfileFilled = true; // Устанавливаем флаг локально
-        tg.showMiniApp({ animation: true }); // Имитация красивой анимации
-        tg.showAlert(`Профиль сохранен. Спасибо!`);
-        renderProfile(); // Перерендеринг профиля для отображения статуса
+        // Обновление локальных флагов
+        isProfileFilled = true; 
+        currentUserData.isFilled = true;
+        tg.showAlert(`Профиль сохранен. Теперь вам доступны задания!`);
+        
+        // Перерендеринг Профиля (чтобы обновился статус)
+        renderProfile(); 
+        
+        // Если сохранили не из вкладки "Создать", возвращаемся к заданиям
+        if (containers.createTask.style.display !== 'block') { 
+            showContainer('workerTasks');
+        }
     }
-
+    
     // Обработчик отправки данных о задании боту
     function sendTaskData() {
+        // ... (Код sendTaskData остается прежним, использует MainButton)
         const type = document.getElementById('task-type').value;
         const title = document.getElementById('task-title').value;
         const link = document.getElementById('task-link').value;
@@ -364,7 +446,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalCost = price * count;
         
-        // Отправляем JSON-данные в Telegram-бот
         tg.sendData(JSON.stringify({
             action: 'create_task',
             type: type,
@@ -376,14 +457,12 @@ document.addEventListener('DOMContentLoaded', () => {
             total: totalCost
         }));
         
-        // После отправки данных остаемся в меню Заказчика
         tg.showAlert(`Задание "${title}" отправлено на модерацию. Списано ${totalCost.toFixed(2)} Звезд.`);
         showContainer('customerMenu');
     }
 
     // Обработчик нажатия на баланс (общий)
     window.handleBalanceClick = function(role) {
-        // Здесь можно добавить анимацию звука, например: tg.HapticFeedback.notificationOccurred('success');
         if (role === 'worker') {
             tg.showAlert("Меню Вывода Средств (Имитация).");
         } else {
@@ -391,11 +470,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // Обработчик модального окна
+    // Обработчики модального окна-предупреждения (старая модалка)
     document.getElementById('modal-close').onclick = () => hideModal('profile-modal');
     document.getElementById('modal-goto-profile').onclick = () => {
         hideModal('profile-modal');
-        showContainer('profile'); // Переход во вкладку Профиль
+        showContainer('profile');
     };
 
 
