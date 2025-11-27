@@ -1,11 +1,12 @@
 # config.py
 
 # --- Настройки Бота ---
-BOT_TOKEN = '8416913726:AAE937-_pMj32dNBEYvCkjG5Gn-PCc1Q_xY' 
-# !!! ЗАМЕНИТЕ ЭТОТ АДРЕС НА ВАШ РЕАЛЬНЫЙ АДРЕС Mini App !!!
-# Для тестирования фронтенда Mini App вам понадобится разместить HTML/JS 
-# на публичном хостинге (например, GitHub Pages, Vercel или ваш личный сервер).
-MINI_APP_URL = 'https://example.com/profit_hub/index.html'
+# Токен бота из BotFather
+BOT_TOKEN = '9416913726:AAE937-_-pMJ32dNBEYVCkJG5Gn-PCc10_xY'
 
-# Название проекта для сообщений
-PROJECT_NAME = 'Profit Pro Hub'
+PROJECT_NAME = "Profit Pro Hub"
+PROJECT_LINK = "https://t.me/profit_pro_hub_bot"
+
+# --- Настройки Telegram Mini App ---
+# Адрес на GitHub Pages после развертывания из корня
+MINI_APP_URL = 'https://rustamromanov.github.io/profit-pro-hub-webapp/'
