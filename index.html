@@ -2,10 +2,11 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Profit Pro Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght{400;500;700}&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: var(--tg-theme-bg-color, #f4f4f4);
@@ -40,9 +41,14 @@
             font-weight: 500;
             color: var(--text-color);
             display: flex;
+            flex-direction: column; /* Изменено на столбец */
+            gap: 5px;
+            z-index: 10;
+        }
+        .header-top-row {
+            display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 10;
         }
         .balance-info strong {
             color: var(--accent-color);
@@ -51,6 +57,18 @@
             color: var(--hint-color);
             margin-left: 10px;
         }
+        .user-rating-row {
+            font-size: 13px;
+            color: var(--hint-color);
+            display: flex;
+            justify-content: space-between;
+        }
+        .rating-link {
+            color: var(--link-color);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
 
         .container {
             padding: 15px;
@@ -97,8 +115,44 @@
             min-width: 60px;
             text-align: center;
             margin-left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Стили для иконки Звезды Telegram */
+        .tg-star {
+            color: var(--accent-color); /* Золотистый цвет */
+            font-size: 16px;
+            margin-right: 4px;
         }
 
+        /* --- ФОРМА СОЗДАНИЯ (СПЕЦИАЛЬНЫЕ СТИЛИ) --- */
+        .form-section-title {
+            font-size: 14px;
+            color: var(--link-color);
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        .scroll-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .scroll-input-group > div {
+            flex: 1;
+        }
+
+        /* Убираем стрелки в input type=number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+        
         /* --- КОМПАКТНЫЙ ПРОФИЛЬ (АНКЕТА) --- */
         #profile-form-header {
             margin-top: 10px;
@@ -107,20 +161,19 @@
             border-radius: 10px;
             display: flex;
             gap: 10px;
-            align-items: flex-end;
+            align-items: center;
+            font-size: 14px;
+            justify-content: space-between;
         }
-        #profile-form-header select {
-            background-color: var(--bg-color);
-            border: 1px solid var(--hint-color);
-            border-radius: 6px;
-            padding: 8px;
-            color: var(--text-color);
-            flex: 1;
-            min-width: 0;
+        #profile-form-header button {
+             /* Скрываем кнопку, она появится только при изменении */
+             display: none; 
         }
+
 
         /* --- Tab Bar --- */
         .tab-bar {
+            /* ... (Остается без изменений) ... */
             position: fixed;
             bottom: 0;
             left: 0;
@@ -155,21 +208,20 @@
         
         .tab-rating {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            font-size: 9px;
+            bottom: 5px; /* Перемещаем вниз, чтобы не мешать иконке */
+            font-size: 10px;
             font-weight: 700;
             color: var(--accent-color);
+            left: 50%;
+            transform: translateX(-50%);
         }
 
         /* --- Имитация Иконок --- */
-        .icon-tasks::before { content: '💰'; } /* Новая монетка */
+        .icon-tasks::before { content: '💰'; } 
         .icon-customer::before { content: '📣'; }
         .icon-profile::before { content: '👤'; }
         
         /* --- Общие стили для форм и кнопок --- */
-        /* ... (Остальные стили форм и кнопок остаются из предыдущей версии) ... */
-
         input[type="text"], input[type="number"], select, textarea {
             width: 100%;
             padding: 10px;
@@ -187,14 +239,6 @@
             font-weight: 500;
         }
 
-        .select-group {
-            display: flex;
-            gap: 10px;
-        }
-        .select-group > div {
-            flex: 1;
-        }
-        
         .btn-primary {
             background-color: var(--button-color);
             color: var(--button-text-color);
@@ -231,6 +275,7 @@
             max-height: 80vh;
             overflow-y: auto;
         }
+        
     </style>
 </head>
 <body>
@@ -280,12 +325,25 @@
             <h3>Пользовательское Соглашение Заказчика</h3>
             <div style="text-align: left; max-height: 200px; overflow-y: auto; border: 1px solid var(--bg-color); padding: 10px; margin-bottom: 15px;">
                 <p>1. **Модерация:** Все задания проходят модерацию. Запрещены мат, агрессия, NSFW и незаконный контент.</p>
-                <p>2. **Администратор Бота:** Для проверки выполнения задания, вы обязуетесь добавить бота @ProfitProHub_bot администратором в рекламируемый канал/чат. Если бот не является администратором, задание не будет запущено, а средства вернутся на баланс.</p>
+                <p>2. **Администратор Бота:** Для проверки выполнения задания, вы обязуетесь добавить бота **@ProfitProHub_bot** администратором в рекламируемый канал/чат. Если бот не является администратором, задание не будет запущено, а средства вернутся на баланс.</p>
                 <p>3. **Списание средств:** Средства списываются сразу после успешной модерации и установки бота-администратора.</p>
                 <p>4. **Ответственность:** Вы несете полную ответственность за контент, который продвигаете.</p>
             </div>
             <button id="modal-accept-agreement" class="btn-primary">Принять и Продолжить</button>
             <button id="modal-cancel-agreement" class="btn-primary" style="background-color: var(--hint-color); margin-top: 10px;">Отмена</button>
+        </div>
+    </div>
+    
+    <div id="rating-rules-modal" class="modal">
+        <div class="modal-content">
+            <h3>⭐️ Правила Рейтинга Исполнителя</h3>
+            <div style="text-align: left; max-height: 200px; overflow-y: auto; border: 1px solid var(--bg-color); padding: 10px; margin-bottom: 15px;">
+                <p>Ваш рейтинг (от 1.0 до 5.0) зависит от качества и скорости выполнения заданий.</p>
+                <p>– **Рост Рейтинга:** Начисляется за быстрое и безошибочное выполнение заданий.</p>
+                <p>– **Снижение Рейтинга:** Происходит за жалобы от заказчиков, отмену выполнения или несоблюдение условий.</p>
+                <p>– **Бонус:** Исполнители с рейтингом выше 4.5 получают **сниженную комиссию** на вывод средств. При 5.0 комиссия минимальна.</p>
+            </div>
+            <button id="modal-close-rating" class="btn-primary">Закрыть</button>
         </div>
     </div>
 
