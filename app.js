@@ -1,4 +1,4 @@
-// app.js (ПОЛНЫЙ КОД - Редизайн v4: Функционал Заданий и UX/UI)
+// app.js (ПОЛНЫЙ КОД - Редизайн v4: Функционал Заданий и UX/UI с фиксом закрытия)
 
 document.addEventListener('DOMContentLoaded', () => {
     const tg = window.Telegram.WebApp;
@@ -49,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const tabItems = document.querySelectorAll('.tab-item');
-    // const tabRatingElement = document.querySelector('.tab-rating'); // Убран по ТЗ
     
     const COUNTRIES = [
         "Россия", "Украина", "Казахстан", "Беларусь", "Узбекистан", "Армения", 
@@ -60,11 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 0. ГЛОБАЛЬНЫЕ РЕНДЕР-ФУНКЦИИ ---
     
     function loadUserData() {
-        // Имитируем, что соглашение принято для тестов
         currentUserData.isFilled = !!(currentUserData.age > 0 && currentUserData.gender && currentUserData.country);
         currentUserData.isAgreementAccepted = true; 
         
-        // Фильтруем задания, чтобы не показывать выполненные
         workerAvailableTasks = workerAvailableTasks.filter(task => !performedTaskIds.includes(task.id));
     }
     
@@ -95,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         renderGlobalHeader(); 
-        // tabRatingElement.textContent = ''; // Убрали рейтинг из Tab Bar
         
         tabItems.forEach(item => {
             if (item.getAttribute('data-target') === containerName) {
@@ -105,8 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        tg.MainButton.hide(); 
-        
+        // tg.MainButton.hide(); // <-- УДАЛЕНО: Управление кнопкой теперь внутри рендер-функций
+
         if (containerName === 'workerTasks') renderWorkerTasks();
         if (containerName === 'customerMenu') renderCustomerMenu();
         if (containerName === 'profile') renderProfile();
@@ -124,6 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. Рендер Заданий (Исполнитель) ---
     function renderWorkerTasks() {
+        // --- ФИКС: Удержание Mini App открытым ---
+        tg.MainButton.setText(""); 
+        tg.MainButton.show();
+        tg.MainButton.disable(); // Кнопка неактивна для клика, но видима для Telegram
+
         let tasksHtml = '<h2>💰 Доступные Задания</h2>';
         
         if (workerAvailableTasks.length === 0) {
@@ -184,7 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- 2. Рендер Меню Заказчика: СОЗДАТЬ ---
     function renderCustomerMenu() {
-        // ... (Остается без изменений) ...
+        // --- ФИКС: Удержание Mini App открытым ---
+        tg.MainButton.setText(" "); 
+        tg.MainButton.show();
+        tg.MainButton.disable(); 
+
         let activeTasksHtml = '<h3>📈 Активные и Завершенные Задания</h3>';
 
         if (customerActiveTasks.length === 0) {
@@ -223,7 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- 3. Рендер Формы Создания Задания (ОБНОВЛЕННЫЙ UX) ---
     function renderCreateTask() {
-         tg.MainButton.hide();
+         // --- ФИКС: Удержание Mini App открытым (здесь кнопка должна быть активна) ---
+         tg.MainButton.enable();
          
          const ageOptionsMin = generateOptions(0, 99, 16);
          const ageOptionsMax = generateOptions(0, 99, 99);
@@ -364,6 +370,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- 4. Рендер Меню ПРОФИЛЬ (ОБНОВЛЕННЫЙ UX) ---
     function renderProfile() {
+        // --- ФИКС: Удержание Mini App открытым ---
+        tg.MainButton.setText(" "); 
+        tg.MainButton.show();
+        tg.MainButton.disable();
+
         const profile = currentUserData; 
 
         containers.profile.innerHTML = `
@@ -378,7 +389,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="card" style="text-align: center;"><p>Ваша история заработка будет здесь.</p></div>
         `;
         
-        tg.MainButton.hide(); 
         document.getElementById('rating-link-profile').onclick = () => showRatingRules(false);
     }
     
