@@ -9,20 +9,19 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # Таблица Users (ДОБАВЛЕНЫ: is_agreement_accepted, tasks_completed)
+    # Таблица Users (без изменений по сравнению с последней версией)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
             is_customer BOOLEAN DEFAULT FALSE,
             balance_simulated REAL DEFAULT 0.0,
             
-            -- Поле для одноразового соглашения заказчика
             is_agreement_accepted BOOLEAN DEFAULT FALSE,
             
             -- Поля исполнителя
             profile_emoji TEXT DEFAULT '',
             rating REAL DEFAULT 5.0, 
-            tasks_completed INTEGER DEFAULT 0, -- Новое поле
+            tasks_completed INTEGER DEFAULT 0, 
             
             -- Поля анкеты
             profile_age INTEGER DEFAULT 0,
@@ -38,7 +37,20 @@ def init_db():
             customer_id INTEGER,
             title TEXT,
             price_simulated REAL,
-            slots_remaining INTEGER
+            slots_remaining INTEGER,
+            target_link TEXT -- Добавим поле для ссылки на канал
+        );
+    """)
+    
+    # НОВАЯ Таблица для отслеживания выполненных заданий
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS completed_tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            task_id INTEGER NOT NULL,
+            completion_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            -- Обеспечиваем, что один пользователь не может выполнить одно задание дважды
+            UNIQUE (user_id, task_id)
         );
     """)
 
@@ -53,10 +65,10 @@ def setup_initial_data():
     # Проверяем, есть ли уже тестовые задания
     cursor.execute("SELECT COUNT(*) FROM tasks")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO tasks (customer_id, title, price_simulated, slots_remaining) VALUES (?, ?, ?, ?)", 
-                       (1001, "Подписка: Канал Profit Pro", 0.15, 500))
-        cursor.execute("INSERT INTO tasks (customer_id, title, price_simulated, slots_remaining) VALUES (?, ?, ?, ?)", 
-                       (1001, "Комментарий: Оставить отзыв", 0.10, 85))
+        cursor.execute("INSERT INTO tasks (customer_id, title, price_simulated, slots_remaining, target_link) VALUES (?, ?, ?, ?, ?)", 
+                       (1001, "Подписка: Канал Profit Pro", 0.15, 500, "https://t.me/telegram")) # Имитация ссылки
+        cursor.execute("INSERT INTO tasks (customer_id, title, price_simulated, slots_remaining, target_link) VALUES (?, ?, ?, ?, ?)", 
+                       (1001, "Комментарий: Оставить отзыв", 0.10, 85, "https://t.me/telegram_chat"))
         conn.commit()
         print("Добавлены тестовые задания.")
     

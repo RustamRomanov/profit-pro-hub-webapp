@@ -1,44 +1,45 @@
-// app.js (ПОЛНЫЙ КОД - Редизайн v3: UX и Логика)
+// app.js (ПОЛНЫЙ КОД - Редизайн v4: Функционал Заданий и UX/UI)
 
 document.addEventListener('DOMContentLoaded', () => {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand(); 
     
-    // --- ИМИТАЦИЯ ДАННЫХ (В РЕАЛЬНОСТИ ПОЛУЧАЕМ ИХ С БЭКЕНДА) ---
-    // Мы можем получить имя пользователя (username или first_name) из объекта tg.initDataUnsafe
     const username = tg.initDataUnsafe.user?.username || tg.initDataUnsafe.user?.first_name || 'Пользователь';
+    const userId = tg.initDataUnsafe.user?.id || 12345;
     
     // Имитация данных пользователя, которые должны загрузиться с бэкенда
     let currentUserData = { 
         name: username,
-        age: 0, // 0 означает, что анкета не заполнена
+        id: userId,
+        age: 0, 
         gender: '', 
         country: '',
         balance: 50.75,
         pending_balance: 15.00, 
         rating: 4.85, 
-        tasks_completed: 154, // Количество выполненных заданий
-        isFilled: false, // Флаг анкеты исполнителя
-        isAgreementAccepted: false // Флаг соглашения заказчика
+        tasks_completed: 154, 
+        isFilled: false, 
+        isAgreementAccepted: false 
     }; 
     
-    const BOT_USERNAME = '@ProfitProHub_bot'; // Имя вашего бота
-    
-    // Имитация списка запрещенных слов
+    const BOT_USERNAME = '@ProfitProHub_bot'; 
     const FORBIDDEN_WORDS = ['мат', 'агрессия', 'порно', 'наркотики', 'мошенничество'];
     
-    // Имитация данных
+    // Имитация данных (Теперь данные о выполненных заданиях будут браться из БД)
     let customerActiveTasks = [
         { id: 101, title: "Подписка на канал", spent: 15.0, total: 50.0, percent: 30, status: 'Запущено' },
     ];
     let workerAvailableTasks = [
-        { id: 1, title: "Подписка: VIP-канал", price: 0.50, slots: 100, type: 'subscribe' },
-        { id: 2, title: "Комментарий: Оставить отзыв", price: 0.35, slots: 85, type: 'comment' },
-        { id: 3, title: "Подписка: Новый канал (Срочно!)", price: 0.15, slots: 500, type: 'subscribe' },
-        { id: 4, title: "Реакция: 5 лайков", price: 0.10, slots: 1000, type: 'reaction' },
+        { id: 1, title: "Подписка: VIP-канал", price: 0.50, slots: 100, type: 'subscribe', link: "https://t.me/example_channel_vip" },
+        { id: 2, title: "Комментарий: Оставить отзыв", price: 0.35, slots: 85, type: 'comment', link: "https://t.me/example_chat_review" },
+        { id: 3, title: "Подписка: Новый канал (Срочно!)", price: 0.15, slots: 500, type: 'subscribe', link: "https://t.me/example_channel_new" },
+        { id: 4, title: "Реакция: 5 лайков", price: 0.10, slots: 1000, type: 'reaction', link: "https://t.me/example_post_5_likes" },
     ]; 
     workerAvailableTasks.sort((a, b) => b.price - a.price);
+    
+    // Имитация: Задания, которые пользователь уже выполнил (в реале берется из completed_tasks)
+    let performedTaskIds = [1]; 
 
     const containers = {
         workerTasks: document.getElementById('worker-tasks-container'),
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const tabItems = document.querySelectorAll('.tab-item');
-    const tabRatingElement = document.querySelector('.tab-rating');
+    // const tabRatingElement = document.querySelector('.tab-rating'); // Убран по ТЗ
     
     const COUNTRIES = [
         "Россия", "Украина", "Казахстан", "Беларусь", "Узбекистан", "Армения", 
@@ -59,33 +60,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 0. ГЛОБАЛЬНЫЕ РЕНДЕР-ФУНКЦИИ ---
     
     function loadUserData() {
-        // Здесь должен быть AJAX-запрос к боту для получения ВСЕХ данных из БД
-        // Имитируем проверку:
+        // Имитируем, что соглашение принято для тестов
         currentUserData.isFilled = !!(currentUserData.age > 0 && currentUserData.gender && currentUserData.country);
-        currentUserData.isAgreementAccepted = true; // Имитируем, что соглашение принято для тестов
+        currentUserData.isAgreementAccepted = true; 
+        
+        // Фильтруем задания, чтобы не показывать выполненные
+        workerAvailableTasks = workerAvailableTasks.filter(task => !performedTaskIds.includes(task.id));
     }
     
     function renderGlobalHeader() {
         const headerBar = document.getElementById('global-header-bar');
         
+        // Оставили только Баланс и Эскроу
         headerBar.innerHTML = `
             <div class="header-top-row">
                 <div class="balance-info">
-                    Баланс: <strong onclick="handleBalanceClick('all')" style="cursor: pointer;">${currentUserData.balance.toFixed(2)} Звезд</strong> 
-                    <small>(Эскроу: ${currentUserData.pending_balance.toFixed(2)})</small>
+                    Баланс: <strong onclick="handleBalanceClick('all')" style="cursor: pointer;">${currentUserData.balance.toFixed(2)} ⭐️</strong> 
+                    <small>(Эскроу: ${currentUserData.pending_balance.toFixed(2)} ⭐️)</small>
                 </div>
                 <div style="color: var(--link-color); cursor: pointer;" onclick="handleBalanceClick('all')">
                     <i class="icon-tasks"></i>
                 </div>
             </div>
-            <div class="user-rating-row">
-                <span>Привет, ${currentUserData.name}</span>
-                <span class="rating-link" id="rating-link-header">
-                    Рейтинг: ⭐️ ${currentUserData.rating.toFixed(2)}
-                </span>
-            </div>
         `;
-        document.getElementById('rating-link-header').onclick = () => showModal('rating-rules-modal');
     }
     
     // --- 0.1 Управление контейнерами ---
@@ -98,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         renderGlobalHeader(); 
-        tabRatingElement.textContent = currentUserData.rating.toFixed(1);
+        // tabRatingElement.textContent = ''; // Убрали рейтинг из Tab Bar
         
         tabItems.forEach(item => {
             if (item.getAttribute('data-target') === containerName) {
@@ -115,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (containerName === 'profile') renderProfile();
         if (containerName === 'createTask') renderCreateTask();
         
-        // Анкета должна исчезнуть (или не рендериться)
         document.getElementById('profile-form-header').style.display = 'none';
     }
     
@@ -130,36 +126,65 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderWorkerTasks() {
         let tasksHtml = '<h2>💰 Доступные Задания</h2>';
         
-        workerAvailableTasks.forEach(task => {
-            tasksHtml += `
-                <div class="task-item" data-task-id="${task.id}">
-                    <div class="task-title">
-                        ${task.title}
-                        <small style="color: var(--hint-color); display: block;">Осталось: ${task.slots} слотов</small>
+        if (workerAvailableTasks.length === 0) {
+            tasksHtml += '<div class="card"><p>Новых заданий пока нет. Загляните позже!</p></div>';
+        } else {
+            workerAvailableTasks.forEach(task => {
+                tasksHtml += `
+                    <div class="task-item" data-task-id="${task.id}" data-task-price="${task.price}" data-task-link="${task.link}">
+                        <div class="task-title">
+                            ${task.title}
+                            <small style="color: var(--hint-color); display: block;">Осталось: ${task.slots} слотов</small>
+                        </div>
+                        <div class="task-price">
+                            <span class="tg-star">⭐️</span> ${task.price.toFixed(2)}
+                        </div>
                     </div>
-                    <div class="task-price">
-                        <span class="tg-star">⭐️</span> ${task.price.toFixed(2)}
-                    </div>
-                </div>
-            `;
-        });
+                `;
+            });
+        }
         
         containers.workerTasks.innerHTML = tasksHtml;
         
         document.querySelectorAll('.task-item').forEach(item => {
-            item.onclick = (e) => {
-                const taskId = item.dataset.taskId;
-                if (!currentUserData.isFilled) {
-                    showModal('profile-form-modal'); // Показываем анкету
-                } else {
-                    tg.showAlert(`Имитация: Вы взяли задание ${taskId} в работу.`);
-                }
-            };
+            item.onclick = handleTaskClick;
         });
+    }
+    
+    // --- ЛОГИКА ВЫПОЛНЕНИЯ ЗАДАНИЯ ---
+    function handleTaskClick(e) {
+        const item = e.currentTarget;
+        const taskId = parseInt(item.dataset.taskId);
+        const taskPrice = parseFloat(item.dataset.taskPrice);
+        const taskLink = item.dataset.taskLink;
+        
+        if (!currentUserData.isFilled) {
+            showModal('profile-form-modal'); // Показываем анкету
+            return;
+        }
+
+        // 1. Имитация перехода на канал/пост
+        tg.openTelegramLink(taskLink); 
+        
+        // 2. Добавление в список выполненных (чтобы больше не выводилось)
+        performedTaskIds.push(taskId);
+        
+        // 3. Отправка данных боту для регистрации выполнения
+        tg.sendData(JSON.stringify({
+            action: 'perform_task',
+            taskId: taskId,
+            price: taskPrice
+        }));
+        
+        tg.showAlert(`✅ Вы перенаправлены на задание. После выполнения, средства будут начислены в Эскроу.`);
+        
+        // Обновляем список заданий после выполнения
+        showContainer('workerTasks');
     }
     
     // --- 2. Рендер Меню Заказчика: СОЗДАТЬ ---
     function renderCustomerMenu() {
+        // ... (Остается без изменений) ...
         let activeTasksHtml = '<h3>📈 Активные и Завершенные Задания</h3>';
 
         if (customerActiveTasks.length === 0) {
@@ -171,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card">
                         <strong>${task.title}</strong>
                         <p style="margin-top: 5px; font-size: 14px;">Статус: <span style="font-weight: 700; color: ${task.status === 'Запущено' ? 'var(--link-color)' : 'orange'};">${task.status}</span></p>
-                        <p>Потрачено: ${task.spent.toFixed(2)} / Бюджет: ${task.total.toFixed(2)} Звезд</p>
+                        <p>Потрачено: ${task.spent.toFixed(2)} / Бюджет: ${task.total.toFixed(2)} ⭐️</p>
                         <div class="progress-bar">
                             <div class="progress" style="width:${Math.max(percent, 5)}%;">${percent.toFixed(0)}%</div>
                         </div>
@@ -196,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    // --- 3. Рендер Формы Создания Задания ---
+    // --- 3. Рендер Формы Создания Задания (ОБНОВЛЕННЫЙ UX) ---
     function renderCreateTask() {
          tg.MainButton.hide();
          
@@ -207,6 +232,17 @@ document.addEventListener('DOMContentLoaded', () => {
          containers.createTask.innerHTML = `
             <h2>Создать Задание</h2>
             <div class="card">
+                <div style="background-color: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--hint-color);">
+                    <div style="font-weight: 700; margin-bottom: 5px; color: var(--link-color);">Шаг 1: Назначить Бота-Админа</div>
+                    <p style="font-size: 14px; margin-bottom: 5px;">Пожалуйста, сделайте бота</p>
+                    <p style="font-size: 16px; font-weight: 700;">
+                        <span id="bot-name-copy" class="copy-to-clipboard">${BOT_USERNAME}</span>
+                        администратором в вашем канале.
+                    </p>
+                    <p style="font-size: 13px; color: var(--hint-color);">
+                        (Кликните на имя бота, чтобы скопировать. Не закрывая приложение, смахните вниз, перейдите в канал и назначьте админа.)
+                    </p>
+                </div>
                 <label for="task-title">Название задания:</label>
                 <input type="text" id="task-title" placeholder="Привлекательное название" required>
                 
@@ -217,17 +253,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <option value="reaction">Поставить реакцию</option>
                 </select>
                 
-                <div class="form-section-title">Параметры задания</div>
-                
                 <label for="task-link">Ссылка на канал/группу:</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
-                    <input type="text" id="task-link" placeholder="https://t.me/your_link" style="margin-bottom: 0;" required>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                    <input type="text" id="task-link" placeholder="Например: @MyChannel или https://t.me/+invitelink" style="margin-bottom: 0;" required>
                 </div>
                 
-                <div style="display: flex; gap: 15px; margin-top: 5px; align-items: center; font-size: 14px;">
+                <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: center; font-size: 14px;">
                     <input type="checkbox" id="is-admin-check" style="width: auto; margin: 0; transform: scale(1.2);">
                     <label for="is-admin-check" style="margin: 0; font-weight: 400; display: inline;">
-                        Бот (${BOT_USERNAME}) назначен администратором?
+                        Я назначил(а) бота администратором
                     </label>
                     <span style="color: var(--link-color); cursor: pointer;" onclick="showRatingRules(true)">[правила]</span>
                 </div>
@@ -236,21 +270,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 <label style="margin-bottom: 10px;">Желаемый возраст:</label>
                 <div class="scroll-input-group">
-                    <div>
-                        <select id="age-min">${ageOptionsMin}</select>
-                        <small style="color: var(--hint-color);">От</small>
-                    </div>
-                    <div>
-                        <select id="age-max">${ageOptionsMax}</select>
-                        <small style="color: var(--hint-color);">До</small>
-                    </div>
+                    <div style="flex: 0 0 50px;"><small style="color: var(--hint-color);">От</small></div>
+                    <div><select id="age-min">${ageOptionsMin}</select></div>
+                    <div style="flex: 0 0 50px;"><small style="color: var(--hint-color);">До</small></div>
+                    <div><select id="age-max">${ageOptionsMax}</select></div>
                 </div>
                 
                 <label>Пол:</label>
                 <div style="display: flex; gap: 20px; margin-bottom: 15px;">
                     <label><input type="checkbox" name="gender-M" value="M" checked> Мужской</label>
                     <label><input type="checkbox" name="gender-F" value="F" checked> Женский</label>
-                    <label><input type="checkbox" name="gender-Any" value="Any" checked> Оба</label>
                 </div>
                 
                 <label for="country-select">Страна:</label>
@@ -261,15 +290,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     </select>
                 </div>
                 
-                <div class="form-section-title">Бюджет и Стоимость</div>
+                <div class="form-section-title">Стоимость и Бюджет</div>
                 
                 <div class="scroll-input-group">
-                    <div>
+                    <div style="flex: 3;">
                         <label>Цена за выполнение (⭐️):</label>
                         <input type="number" id="task-price" placeholder="0.25" min="0.05" step="0.01" required>
                     </div>
-                    <div>
-                        <label>Количество выполнений:</label>
+                    <div style="flex: 2;">
+                        <label>Количество:</label>
                         <input type="number" id="task-count" placeholder="100" min="10" required>
                     </div>
                 </div>
@@ -281,6 +310,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
+        
+        // --- Логика копирования ---
+        document.getElementById('bot-name-copy').onclick = () => {
+            navigator.clipboard.writeText(BOT_USERNAME).then(() => {
+                tg.showPopup({message: `Имя бота ${BOT_USERNAME} скопировано!`});
+            });
+        };
         
         const priceInput = document.getElementById('task-price');
         const countInput = document.getElementById('task-count');
@@ -302,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tg.MainButton.show();
         tg.MainButton.onClick(sendTaskData);
         
-        // Модальное окно правил для бота-администратора
+        // Модальное окно правил для бота-администратора (Правила Рейтинга переименованы)
         window.showRatingRules = function(isAdmin = false) {
             const modalContent = document.querySelector('#rating-rules-modal .modal-content');
             if (isAdmin) {
@@ -312,21 +348,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>Необходимые права: **Добавление новых администраторов** (для проверки), **Просмотр информации о канале**.</p>
                     <p>Это позволяет нам автоматически проверять, выполнил ли исполнитель подписку, и гарантировать качество трафика.</p>
                 `;
+            } else {
+                 modalContent.querySelector('h3').textContent = '⭐️ Правила Рейтинга Исполнителя';
+                 modalContent.querySelector('div').innerHTML = `
+                    <p>Ваш рейтинг (от 1.0 до 5.0) зависит от качества и скорости выполнения заданий.</p>
+                    <p>– **Рост Рейтинга:** Начисляется за быстрое и безошибочное выполнение заданий.</p>
+                    <p>– **Снижение Рейтинга:** Происходит за жалобы от заказчиков, отмену выполнения или несоблюдение условий.</p>
+                    <p>– **Бонус:** Исполнители с рейтингом выше 4.5 получают **сниженную комиссию** на вывод средств. При 5.0 комиссия минимальна.</p>
+                 `;
             }
             showModal('rating-rules-modal');
         }
         document.getElementById('modal-close-rating').onclick = () => hideModal('rating-rules-modal');
     }
     
-    // --- 4. Рендер Меню ПРОФИЛЬ ---
+    // --- 4. Рендер Меню ПРОФИЛЬ (ОБНОВЛЕННЫЙ UX) ---
     function renderProfile() {
         const profile = currentUserData; 
 
         containers.profile.innerHTML = `
-            <h2>Ваш Исполнительский Профиль</h2>
+            <h2>Профиль</h2>
+            
             <div class="card">
-                <p>Рейтинг: <span class="rating-link" id="rating-link-profile">⭐️ ${profile.rating.toFixed(2)}</span></p>
                 <p>Выполнено заданий: <strong>${profile.tasks_completed}</strong></p>
+                <p>Ваш текущий Рейтинг: <span class="rating-link" id="rating-link-profile">⭐️ ${profile.rating.toFixed(2)}</span></p>
             </div>
             
             <h3>История Заработка</h3>
@@ -334,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         
         tg.MainButton.hide(); 
-        document.getElementById('rating-link-profile').onclick = () => showModal('rating-rules-modal');
+        document.getElementById('rating-link-profile').onclick = () => showRatingRules(false);
     }
     
     // --- Вспомогательные функции ---
@@ -467,7 +512,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isForbidden) {
              tg.showAlert("🛑 Задание содержит запрещенные слова. Размещение отклонено.");
              
-             // Отправка данных боту (для лога)
              tg.sendData(JSON.stringify({ action: 'create_task', status: 'Отклонено модерацией' }));
              showContainer('customerMenu');
              return;
@@ -475,7 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 2. СИМУЛЯЦИЯ ПРОВЕРКИ АДМИНА
         let taskStatus = 'На модерации';
-        let statusMessage = 'Задание отправлено на модерацию. Ожидание проверки администратора.';
+        let statusMessage = '';
 
         if (!isAdminChecked) {
              taskStatus = 'Не установлен администратор';
